@@ -8,12 +8,12 @@ import { FormatBase } from '../shared/format';
   selector: 'app-home-page',
   imports: [RouterLink],
   template: `
-    <div class="page">
+    <div class="page home-page">
       <div class="container">
         <section class="hero">
           <div class="hero-copy">
             <p class="eyebrow">Bolera · bowling social</p>
-            <h1>Esta noche en Bolera</h1>
+            <h1>El strike empieza<span class="accent-inline"> aquí.</span></h1>
             <p class="lead">
               Ocho pistas, zapatos y bar. Elige día y franja, retiene 15 minutos y juega con
               ticket QR en el móvil.
@@ -22,28 +22,48 @@ import { FormatBase } from '../shared/format';
               <a routerLink="/pistas" class="btn btn-primary btn-lg">Reservar pista</a>
               <a routerLink="/pistas" class="btn btn-secondary btn-lg">Ver plano</a>
             </div>
+            <div class="hero-ticker" aria-label="Estadística rápida">
+              <span class="ticker-pip"></span>
+              <span>Retención de <strong>15 min</strong> sin pagar</span>
+            </div>
           </div>
-          <aside class="hero-panel">
-            <h3>Horario hoy</h3>
-            <ul class="hours-list">
-              <li><span class="day">Lun — Jue</span><span class="time">16:00 – 23:00</span></li>
-              <li><span class="day">Vie — Sáb</span><span class="time">16:00 – 00:00</span></li>
-              <li><span class="day">Domingo</span><span class="time">16:00 – 22:00</span></li>
-            </ul>
-            <p class="text-sm text-muted mt-3 mb-0">Sesiones de 60 min · Europe/Madrid</p>
+          <aside class="hero-visual" aria-hidden="true">
+            <div class="hero-photo-wrap">
+              <img
+                class="hero-photo"
+                src="/assets/lanes/hero.jpg"
+                alt=""
+                width="640"
+                height="440"
+                loading="eager"
+              />
+              <span class="hero-chip chip-free">● 4 pistas libres ahora</span>
+            </div>
+            <div class="hero-panel">
+              <h3>Horario hoy</h3>
+              <ul class="hours-list">
+                <li><span class="day">Lun — Jue</span><span class="time">16:00 – 23:00</span></li>
+                <li><span class="day">Vie — Sáb</span><span class="time">16:00 – 00:00</span></li>
+                <li><span class="day">Domingo</span><span class="time">16:00 – 22:00</span></li>
+              </ul>
+              <p class="text-sm text-muted mt-3 mb-0">Sesiones de 60 min · Europe/Madrid</p>
+            </div>
           </aside>
         </section>
 
         <section class="section">
           <div class="section-head">
-            <h2>Pistas destacadas</h2>
-            <a routerLink="/pistas">Catálogo completo →</a>
+            <div>
+              <p class="eyebrow">Esta noche</p>
+              <h2>Pistas destacadas</h2>
+            </div>
+            <a routerLink="/pistas" class="link-arrow">Catálogo completo →</a>
           </div>
 
           @if (loading()) {
             <div class="card-grid">
               @for (i of [1, 2, 3, 4]; track i) {
-                <div class="card"><div class="skeleton" style="height: 160px"></div></div>
+                <div class="card lane-card"><div class="skeleton" style="height: 200px"></div></div>
               }
             </div>
           } @else if (error()) {
@@ -62,10 +82,21 @@ import { FormatBase } from '../shared/format';
               @for (lane of featured(); track lane.id) {
                 <a class="card lane-card" [routerLink]="['/pistas', lane.id]">
                   <div class="lane-swatch">
-                    <span class="lane-num">{{ lane.number }}</span>
+                    <img
+                      class="lane-photo"
+                      [src]="laneImg(lane)"
+                      [alt]="lane.name"
+                      width="480"
+                      height="270"
+                      loading="lazy"
+                    />
+                    <span class="lane-num-badge">{{ lane.number }}</span>
+                    @if (!lane.maintenance && (lane.freeSlotsToday ?? 0) > 0) {
+                      <span class="lane-free-dot"><span class="dot"></span>{{ lane.freeSlotsToday }} huecos</span>
+                    }
                   </div>
                   <div class="lane-card-body">
-                    <div class="between">
+                    <div class="lane-card-top">
                       <h3>{{ lane.name }}</h3>
                       @if (lane.maintenance) {
                         <span class="badge">Mantenimiento</span>
@@ -75,10 +106,12 @@ import { FormatBase } from '../shared/format';
                         <span class="badge chip-busy">Ocupada</span>
                       }
                     </div>
-                    <p class="text-sm mb-0">Máx. {{ lane.maxPlayers }} jugadores</p>
+                    <p class="text-sm text-muted mb-0">Máx. {{ lane.maxPlayers }} jugadores</p>
                     <div class="lane-card-foot">
                       <span class="price">desde {{ eur(lane.basePriceCents) }}</span>
-                      <span class="text-sm text-muted">{{ lane.freeSlotsToday ?? '—' }} huecos hoy</span>
+                      @if (lane.ratingAvg != null) {
+                        <span class="text-sm text-muted">★ {{ lane.ratingAvg.toFixed(1) }}</span>
+                      }
                     </div>
                   </div>
                 </a>
@@ -87,17 +120,15 @@ import { FormatBase } from '../shared/format';
           }
         </section>
 
-        <section class="section">
-          <div class="card card-muted">
-            <div class="between">
-              <div>
-                <h2 class="mb-0">Reserva tu franja</h2>
-                <p class="mb-0 mt-2">
-                  Hold de 15 min en servidor, zapatos por talla y add-ons del bar.
-                </p>
-              </div>
-              <a routerLink="/pistas" class="btn btn-primary">Elegir pista</a>
+        <section class="section cta-band">
+          <div class="cta-band-inner">
+            <div>
+              <h2 class="mb-0">¿No sabes dónde jugar?</h2>
+              <p class="mb-0 mt-2">
+                Mira el plano del local, elige pista y franja y retén tu hueco en 15 minutos.
+              </p>
             </div>
+            <a routerLink="/pistas" class="btn btn-primary btn-lg">Elegir pista</a>
           </div>
         </section>
       </div>
@@ -114,6 +145,10 @@ export class HomePageComponent extends FormatBase implements OnInit {
     this.load();
   }
 
+  protected laneImg(lane: Lane): string {
+    return lane.imageUrl || `/assets/lanes/lane-${lane.number}.jpg`;
+  }
+
   protected load(): void {
     this.loading.set(true);
     this.error.set('');
@@ -123,7 +158,6 @@ export class HomePageComponent extends FormatBase implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        // Fallback: list all
         this.lanesApi.list().subscribe({
           next: (res) => {
             this.featured.set(res.items.slice(0, 4));

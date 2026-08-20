@@ -1,7 +1,22 @@
 import { Routes } from '@angular/router';
 import { authGuard, roleGuard } from './core/auth.guard';
 
+/**
+ * Auth routes MUST be declared BEFORE the shell (`path: ''`) whose children
+ * end with `path: '**'`. Otherwise the shell wildcard swallows /login and
+ * /registro and the SPA shows NotFound (hold → /login?returnUrl=… also 404).
+ */
 export const routes: Routes = [
+  {
+    path: 'login',
+    loadComponent: () =>
+      import('./pages/login.page').then((m) => m.LoginPageComponent),
+  },
+  {
+    path: 'registro',
+    loadComponent: () =>
+      import('./pages/register.page').then((m) => m.RegisterPageComponent),
+  },
   {
     path: '',
     loadComponent: () =>
@@ -76,15 +91,5 @@ export const routes: Routes = [
           import('./pages/not-found.page').then((m) => m.NotFoundPageComponent),
       },
     ],
-  },
-  {
-    path: 'login',
-    loadComponent: () =>
-      import('./pages/login.page').then((m) => m.LoginPageComponent),
-  },
-  {
-    path: 'registro',
-    loadComponent: () =>
-      import('./pages/register.page').then((m) => m.RegisterPageComponent),
   },
 ];

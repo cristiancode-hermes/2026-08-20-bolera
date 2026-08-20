@@ -37,6 +37,8 @@ export interface Lane {
   freeSlotsToday?: number;
   ratingAvg?: number;
   ratingCount?: number;
+  imageKey?: string | null;
+  imageUrl?: string | null;
 }
 
 export interface LaneDetail {

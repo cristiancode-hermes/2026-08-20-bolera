@@ -21,6 +21,18 @@ import { FormatBase, addDaysISO, todayISO } from '../shared/format';
           <a routerLink="/pistas" class="btn btn-primary">Volver al catálogo</a>
         </div>
       } @else if (lane()) {
+        <div class="lane-hero">
+          <img
+            class="lane-hero-photo"
+            [src]="laneImg(lane()!)"
+            [alt]="lane()!.name"
+            width="1120"
+            height="420"
+            loading="eager"
+          />
+          <span class="lane-num-badge hero">{{ lane()!.number }}</span>
+        </div>
+
         <div class="page-header">
           <div>
             <p class="eyebrow">Pista {{ lane()!.number }}</p>
@@ -32,6 +44,7 @@ import { FormatBase, addDaysISO, todayISO } from '../shared/format';
             @if (ratingAvg() != null) {
               <span class="text-sm text-muted">★ {{ ratingAvg() | number: '1.1-1' }} ({{ ratingCount() }})</span>
             }
+            <span class="text-sm text-muted">{{ lane()!.freeSlotsToday ?? 0 }} huecos hoy</span>
           </div>
         </div>
 
@@ -62,15 +75,18 @@ import { FormatBase, addDaysISO, todayISO } from '../shared/format';
                   @let st = slotState(s);
                   <button
                     type="button"
-                    class="slot-chip"
+                    class="slot-btn"
                     [class.free]="st === 'free'"
-                    [class.busy]="st === 'busy' || st === 'booked' || st === 'held'"
+                    [class.busy]="st === 'busy' || st === 'booked'"
+                    [class.held]="st === 'held'"
                     [class.blocked]="st === 'blocked'"
                     [disabled]="st !== 'free'"
                     (click)="book(s)"
                   >
-                    <span class="mono">{{ s.startTime }}–{{ s.endTime }}</span>
-                    <span class="text-sm">{{ st === 'free' ? 'Libre' : st === 'blocked' ? 'Bloqueada' : 'Ocupada' }}</span>
+                    <span class="time">{{ s.startTime }}–{{ s.endTime }}</span>
+                    <span class="seats">{{
+                      st === 'free' ? 'Libre' : st === 'blocked' ? 'Bloqueada' : st === 'held' ? 'En hold' : 'Ocupada'
+                    }}</span>
                   </button>
                 }
               </div>
@@ -130,6 +146,10 @@ export class LaneDetailPageComponent extends FormatBase implements OnInit {
     this.auth.bootstrap();
     this.laneId = this.route.snapshot.paramMap.get('id') || '';
     this.loadLane();
+  }
+
+  protected laneImg(lane: Lane): string {
+    return lane.imageUrl || `/assets/lanes/lane-${lane.number}.jpg`;
   }
 
   protected onDate(v: string): void {

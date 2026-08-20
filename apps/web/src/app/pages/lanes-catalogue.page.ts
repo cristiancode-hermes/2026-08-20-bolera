@@ -71,22 +71,31 @@ import { FormatBase } from '../shared/format';
               (click)="lane.maintenance && $event.preventDefault()"
             >
               <div class="lane-swatch">
-                <span class="lane-num">{{ lane.number }}</span>
+                <img
+                  class="lane-photo"
+                  [src]="laneImg(lane)"
+                  [alt]="lane.name"
+                  width="480"
+                  height="270"
+                  loading="lazy"
+                />
+                <span class="lane-num-badge">{{ lane.number }}</span>
               </div>
               <div class="lane-card-body">
                 <div class="between">
                   <h3>{{ lane.name }}</h3>
                   @if (lane.maintenance || !lane.active) {
                     <span class="badge">Mantenimiento</span>
-                  } @else if ((lane.freeSlotsToday ?? 1) > 0) {
-                    <span class="badge chip-free">Abierta</span>
+                  } @else if ((lane.freeSlotsToday ?? 0) > 0) {
+                    <span class="badge chip-free">Libre</span>
                   } @else {
-                    <span class="badge chip-busy">Sin huecos</span>
+                    <span class="badge chip-busy">Ocupada</span>
                   }
                 </div>
                 <p class="text-sm mb-0">Hasta {{ lane.maxPlayers }} jugadores</p>
                 <div class="lane-card-foot">
                   <span class="price">{{ eur(lane.basePriceCents) }}/h</span>
+                  <span class="text-sm text-muted">{{ lane.freeSlotsToday ?? 0 }} huecos hoy</span>
                   @if (lane.ratingAvg != null) {
                     <span class="text-sm text-muted">★ {{ lane.ratingAvg | number: '1.1-1' }}</span>
                   }
@@ -109,6 +118,10 @@ export class LanesCataloguePageComponent extends FormatBase implements OnInit {
 
   ngOnInit(): void {
     this.load();
+  }
+
+  protected laneImg(lane: Lane): string {
+    return lane.imageUrl || `/assets/lanes/lane-${lane.number}.jpg`;
   }
 
   protected load(): void {

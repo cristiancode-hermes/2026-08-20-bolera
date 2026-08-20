@@ -15,6 +15,41 @@ export class LanesService {
     @InjectRepository(LaneSlot) private readonly slots: Repository<LaneSlot>,
   ) {}
 
+  /** Count free (not blocked / not held / not booked) slots for a lane on a date. */
+  private async freeSlotsFor(laneId: number, date: string): Promise<number> {
+    const slots = await this.slots.find({ where: { laneId, date, blocked: false } });
+    let free = 0;
+    for (const s of slots) {
+      const bks = await this.bookings.find({ where: { slotId: s.id } });
+      const busy = bks.some(
+        (b) =>
+          b.status === 'confirmed' ||
+          b.status === 'completed' ||
+          isLivePending(b.status, b.expiresAt),
+      );
+      if (!busy) free += 1;
+    }
+    return free;
+  }
+
+  private withImage(lane: Lane) {
+    const key = lane.imageKey || `lane-${lane.number}`;
+    return {
+      ...lane,
+      imageKey: key,
+      imageUrl: `/assets/lanes/${key}.jpg`,
+    };
+  }
+
+  private async withAvailability(lane: Lane, today = madridDate()) {
+    const freeSlotsToday = await this.freeSlotsFor(lane.id, today);
+    return {
+      ...this.withImage(lane),
+      freeSlotsToday,
+      maintenance: false,
+    };
+  }
+
   async findAll(q?: { availableToday?: string; q?: string; page?: number }) {
     const page = Math.max(1, Number(q?.page) || 1);
     const take = 50;
@@ -25,33 +60,22 @@ export class LanesService {
     }
     qb.orderBy('l.number', 'ASC').skip(skip).take(take);
     const [items, total] = await qb.getManyAndCount();
+    const today = madridDate();
 
-    let filtered = items;
-    if (q?.availableToday === '1' || q?.availableToday === 'true') {
-      const today = madridDate();
-      const free: Lane[] = [];
-      for (const lane of items) {
-        const slots = await this.slots.find({ where: { laneId: lane.id, date: today, blocked: false } });
-        let hasFree = false;
-        for (const s of slots) {
-          const bks = await this.bookings.find({ where: { slotId: s.id } });
-          const busy = bks.some(
-            (b) =>
-              b.status === 'confirmed' ||
-              b.status === 'completed' ||
-              isLivePending(b.status, b.expiresAt),
-          );
-          if (!busy) {
-            hasFree = true;
-            break;
-          }
-        }
-        if (hasFree) free.push(lane);
-      }
-      filtered = free;
+    const enriched = [];
+    for (const lane of items) {
+      enriched.push(await this.withAvailability(lane, today));
     }
 
-    return { items: filtered, total: q?.availableToday ? filtered.length : total };
+    let filtered = enriched;
+    if (q?.availableToday === '1' || q?.availableToday === 'true') {
+      filtered = enriched.filter((l) => (l.freeSlotsToday ?? 0) > 0);
+    }
+
+    return {
+      items: filtered,
+      total: q?.availableToday ? filtered.length : total,
+    };
   }
 
   async featured() {
@@ -60,7 +84,12 @@ export class LanesService {
       order: { number: 'ASC' },
       take: 4,
     });
-    return { items };
+    const today = madridDate();
+    const out = [];
+    for (const lane of items) {
+      out.push(await this.withAvailability(lane, today));
+    }
+    return { items: out };
   }
 
   async findOne(id: number) {
@@ -72,7 +101,19 @@ export class LanesService {
       ratingCount === 0
         ? 0
         : Math.round((revs.reduce((a, r) => a + r.rating, 0) / ratingCount) * 10) / 10;
-    return { lane, ratingAvg, ratingCount };
+    const today = madridDate();
+    const freeSlotsToday = await this.freeSlotsFor(id, today);
+    return {
+      lane: {
+        ...this.withImage(lane),
+        freeSlotsToday,
+        ratingAvg,
+        ratingCount,
+        maintenance: false,
+      },
+      ratingAvg,
+      ratingCount,
+    };
   }
 
   async create(dto: CreateLaneDto) {
@@ -88,7 +129,7 @@ export class LanesService {
       active: true,
       imageKey: dto.imageKey ?? null,
     } as any)) as Lane;
-    return { lane };
+    return { lane: this.withImage(lane) };
   }
 
   async update(id: number, dto: UpdateLaneDto) {
@@ -102,7 +143,7 @@ export class LanesService {
     if (dto.active !== undefined) lane.active = dto.active;
     if (dto.imageKey !== undefined) lane.imageKey = dto.imageKey;
     await this.lanes.save(lane);
-    return { lane };
+    return { lane: this.withImage(lane) };
   }
 
   async softDelete(id: number) {
