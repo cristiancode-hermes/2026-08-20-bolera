@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.angular/
+*.db
+*.db-*
+.env
+*.log
+.DS_Store
+coverage/
+data/*.db
+scripts/qa-out/
+apps/api/data/
+*.db
