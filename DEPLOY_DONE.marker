@@ -1,0 +1,8 @@
+Deploy complete for 2026-08-20-bolera
+Caddy: bolera.proyectos.cristiancode.dev → apps/web/dist/web/browser + reverse_proxy :3069
+manage-apis: bolera@3069
+GitHub: https://github.com/cristiancode-hermes/2026-08-20-bolera
+Portfolio: slug bolera (accordion-color-heading-201)
+Landing: proyectos-cristiancode-dev index.html
+Excel: proyectos_completo.xlsx row added
+Published: ✅ Caddy, ✅ Portfolio, ✅ Landing, ✅ Excel, ✅ GitHub

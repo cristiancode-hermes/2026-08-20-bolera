@@ -1,0 +1,7 @@
+QA testing complete for 2026-08-20
+Project: bolera
+Build: ✅ API tsc + Angular production
+Tests: 23/23 passing (Jest) + 25/25 endpoint smoke + browser routes PASS
+New tests: existing coverage adequate (booking-rules.spec.ts)
+Issues: 0 critical (dark hover AA fixed pre-deploy)
+Published: ✅ Caddy (bolera.proyectos.cristiancode.dev :3069), ✅ Portfolio (es.ts+en.ts+pt.ts), ✅ GitHub, ✅ Landing, ✅ Excel
